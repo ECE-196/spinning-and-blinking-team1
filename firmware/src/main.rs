@@ -47,7 +47,7 @@ async fn main(_spawner: Spawner) {
     motor_lo.set_timestamp(0);
 
     let mut status = 0;//speed up 1 and slowing down 0
-    let mut direction = 0;
+    let mut direction = 0;//spin sirection.
     let mut pin13= 255;
     let mut pin14 = 0;
     let maximum =255;
@@ -66,6 +66,7 @@ async fn main(_spawner: Spawner) {
                 status = 1;
                 pin13 = 0;
                 pin14 = 180;
+                Timer::after_millis(50).await;
             }
         }
 
@@ -82,8 +83,9 @@ async fn main(_spawner: Spawner) {
             if pin14 <= minimum {
                 direction = 0;
                 status = 1;
-                pin13 = 0;
-                pin14 = 180;
+                pin14 = 0;
+                pin13 = 180;
+                Timer::after_millis(50).await;
             }
         }
 
