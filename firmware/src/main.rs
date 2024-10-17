@@ -8,6 +8,7 @@ use esp_hal::{
     clock::Clocks, gpio::{Io, Level, Output}, mcpwm::PeripheralClockConfig, timer::timg::TimerGroup
 };
 use esp_println::println;
+use esp_wifi::current_millis;
 use fugit::RateExtU32;
 use esp_hal::mcpwm::McPwm;
 use esp_hal::mcpwm::timer::PwmWorkingMode;
@@ -43,13 +44,29 @@ async fn main(_spawner: Spawner) {
         PwmPinConfig::UP_ACTIVE_HIGH,
     );
 
-    motor_hi.set_timestamp(180);
+    let cur_motor_value = 255;
+    motor_hi.set_timestamp(cur_motor_value);
     motor_lo.set_timestamp(0);
 
     loop {
-        println!("Hello, World!");
-        led.toggle();
-        Timer::after_millis(1_000).await;
+        // println!("Hello, World!");
+        // led.toggle();
+        // Timer::after_millis(1_000).await;
 
+        for cur_motor_value in (0..=255).rev() {
+            motor_hi.set_timestamp(cur_motor_value);
+            motor_lo.set_timestamp(0);
+            Timer::after_millis(10).await;
+        }
+
+        Timer::after_millis(100).await; 
+        
+        for cur_motor_value in (0..=255).rev() {
+            motor_hi.set_timestamp(0);
+            motor_lo.set_timestamp(cur_motor_value);
+            Timer::after_millis(10).await; 
+        }
+    
+        Timer::after_millis(100).await;
     }
 }
