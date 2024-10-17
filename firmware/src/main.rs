@@ -43,8 +43,8 @@ async fn main(_spawner: Spawner) {
         PwmPinConfig::UP_ACTIVE_HIGH,
     );
 
-    // motor_hi.set_timestamp(180);
-    // motor_lo.set_timestamp(0);
+    motor_hi.set_timestamp(180);
+    motor_lo.set_timestamp(0);
 
     loop {
         println!("Hello, World!");
