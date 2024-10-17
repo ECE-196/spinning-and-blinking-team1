@@ -21,10 +21,14 @@ async fn main(_spawner: Spawner) {
     let io = Io::new(peripherals.GPIO, peripherals.IO_MUX);
 
     let mut led = Output::new(io.pins.gpio18, Level::Low);
+    // add these
+    let motor_hi = Output::new(io.pins.gpio13, Level::High);
+    let motor_lo = Output::new(io.pins.gpio14, Level::Low);
 
     loop {
         println!("Hello, World!");
         led.toggle();
         Timer::after_millis(1_000).await;
+
     }
 }
