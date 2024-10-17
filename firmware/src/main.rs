@@ -46,10 +46,62 @@ async fn main(_spawner: Spawner) {
     motor_hi.set_timestamp(180);
     motor_lo.set_timestamp(0);
 
+    let mut status = 0;//speed up 1 and slowing down 0
+    let mut direction = 0;
+    let mut pin13= 255;
+    let mut pin14 = 0;
+    let maximum =255;
+    let minimum = 180;
+
     loop {
-        println!("Hello, World!");
-        led.toggle();
-        Timer::after_millis(1_000).await;
+        //println!("Hello, World!");
+        //led.toggle();
+        //Timer::after_millis(1_000).await;
+
+
+        if status == 0 && direction == 0 {
+            pin13 -= 1;
+            if pin13 <= minimum {
+                direction = 1;
+                status = 1;
+                pin13 = 0;
+                pin14 = 180;
+            }
+        }
+
+        if status == 1 && direction == 1 {
+            pin14 += 1;
+            if pin14 >= maximum {
+                direction = 1;
+                status = 0;
+            }
+        }
+
+        if status == 0 && direction == 1 {
+            pin14 -= 1;
+            if pin14 <= minimum {
+                direction = 0;
+                status = 1;
+                pin13 = 0;
+                pin14 = 180;
+            }
+        }
+
+        if status == 1 && direction == 0 {
+            pin13 += 1;
+            if pin13 >= maximum {
+                direction = 0;
+                status = 0;
+            }
+        }
+        motor_hi.set_timestamp(pin13);
+        motor_lo.set_timestamp(pin14);
+
+        
+
+
+        Timer::after_millis(50).await;
+        
 
     }
 }
