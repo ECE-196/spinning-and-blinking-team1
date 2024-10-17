@@ -30,6 +30,7 @@ bleps = { git = "https://github.com/bjoernQ/bleps", package = "bleps", rev = "a5
     "async",
 ] }
 esp-alloc = "0.4.0"
+fugit = "0.3.7"
 
 [[bin]]
 name = "firmware"
