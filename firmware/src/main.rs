@@ -5,25 +5,21 @@ use embassy_executor::Spawner;
 use embassy_time::Timer;
 use esp_backtrace as _;
 use esp_hal::{
+
+    clock::Clocks,
+    gpio::{Io, Level, Output},
+    mcpwm::PeripheralClockConfig,
+    timer::timg::TimerGroup,
+};
+use esp_println::println;
+
     clock::Clocks, gpio::{Io, Level, Output}, mcpwm::PeripheralClockConfig, timer::timg::TimerGroup
 };
 use esp_println::println;
 use esp_wifi::current_millis;
-use fugit::RateExtU32;
-use esp_hal::mcpwm::McPwm;
-use esp_hal::mcpwm::timer::PwmWorkingMode;
-use esp_hal::mcpwm::operator::PwmPinConfig;
 
-#[esp_hal_embassy::main]
-async fn main(_spawner: Spawner) {
-    esp_println::logger::init_logger_from_env();
-    let peripherals = esp_hal::init(esp_hal::Config::default());
 
-    let timg0 = TimerGroup::new(peripherals.TIMG0);
-    esp_hal_embassy::init(timg0.timer0);
-
-    let io = Io::new(peripherals.GPIO, peripherals.IO_MUX);
-
+    let mut led = Output::new(io.pins.gpio17, Level::Low);
     let mut led = Output::new(io.pins.gpio18, Level::Low);
     // add these
     let motor_hi_pin = io.pins.gpio13;
@@ -48,7 +44,53 @@ async fn main(_spawner: Spawner) {
     motor_hi.set_timestamp(cur_motor_value);
     motor_lo.set_timestamp(0);
 
-    loop {
+
+        // Toggle LED
+        led.toggle();
+
+        if increasing && l_r {
+            duty_cycle -= step;
+            println!("fast!");
+
+            if duty_cycle <= 0 {
+                increasing = false;
+            }
+            motor_hi.set_timestamp(255 - duty_cycle);
+            motor_lo.set_timestamp(duty_cycle);
+        } else if !increasing && l_r {
+            println!("slow");
+            duty_cycle += step;
+            if duty_cycle >= 60 {
+                increasing = true;
+                l_r = false
+            }
+            motor_lo.set_timestamp(duty_cycle);
+            motor_hi.set_timestamp(255 - duty_cycle);
+        } else if increasing && !l_r {
+            println!("away fast!");
+            duty_cycle -= step;
+            if duty_cycle <= 0 {
+                increasing = false;
+            }
+            motor_hi.set_timestamp(duty_cycle);
+            motor_lo.set_timestamp(255 - duty_cycle);
+
+        }
+
+        else if !increasing && !l_r {
+            println!("away slow!");
+            duty_cycle += step;
+            if duty_cycle >= 60 {
+                increasing = true;
+                l_r = true;
+            }
+            motor_hi.set_timestamp(duty_cycle);
+            motor_lo.set_timestamp(255 - duty_cycle);
+
+        }
+
+        Timer::after_millis(500).await;
+
         // println!("Hello, World!");
         // led.toggle();
         // Timer::after_millis(1_000).await;
@@ -68,5 +110,6 @@ async fn main(_spawner: Spawner) {
         }
     
         Timer::after_millis(100).await;
+
     }
 }
