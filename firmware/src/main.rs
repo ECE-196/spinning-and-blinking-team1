@@ -5,35 +5,33 @@ use embassy_executor::Spawner;
 use embassy_time::Timer;
 use esp_backtrace as _;
 use esp_hal::{
+
     clock::Clocks,
     gpio::{Io, Level, Output},
     mcpwm::PeripheralClockConfig,
     timer::timg::TimerGroup,
 };
 use esp_println::println;
-use fugit::RateExtU32;
-use esp_hal::mcpwm::McPwm;
-use esp_hal::mcpwm::timer::PwmWorkingMode;
-use esp_hal::mcpwm::operator::PwmPinConfig;
 
-#[esp_hal_embassy::main]
-async fn main(_spawner: Spawner) {
-    esp_println::logger::init_logger_from_env();
-    let peripherals = esp_hal::init(esp_hal::Config::default());
+    clock::Clocks, gpio::{Io, Level, Output}, mcpwm::PeripheralClockConfig, timer::timg::TimerGroup
+};
+use esp_println::println;
+use esp_wifi::current_millis;
 
-    let timg0 = TimerGroup::new(peripherals.TIMG0);
-    esp_hal_embassy::init(timg0.timer0);
-
-    let io = Io::new(peripherals.GPIO, peripherals.IO_MUX);
 
     let mut led = Output::new(io.pins.gpio17, Level::Low);
-
+    let mut led = Output::new(io.pins.gpio18, Level::Low);
+    // add these
     let motor_hi_pin = io.pins.gpio13;
     let motor_lo_pin = io.pins.gpio14;
 
-    let clock_cfg = PeripheralClockConfig::with_frequency(32.MHz()).unwrap();
+    let clocks = Clocks::get();
+    //println!("src clock: {}", clocks.crypto_pwm_clock);
+    let clock_cfg = PeripheralClockConfig::with_frequency(32.MHz()).unwrap();    //let mut mcpwm = McPwm::new(peripherals.MCPWM0, clock_cfg);
     let mut mcpwm = McPwm::new(peripherals.MCPWM0, clock_cfg);
     mcpwm.operator0.set_timer(&mcpwm.timer0);
+    let timer_clock_cfg = clock_cfg.timer_clock_with_frequency(u8::MAX as u16, PwmWorkingMode::Increase, 20.kHz()).unwrap();
+    mcpwm.timer0.start(timer_clock_cfg);
 
     let (mut motor_hi, mut motor_lo) = mcpwm.operator0.with_pins(
         motor_hi_pin,
@@ -42,17 +40,11 @@ async fn main(_spawner: Spawner) {
         PwmPinConfig::UP_ACTIVE_HIGH,
     );
 
-    let timer_clock_cfg = clock_cfg
-        .timer_clock_with_frequency(u8::MAX as u16, PwmWorkingMode::Increase, 20.kHz())
-        .unwrap();
+    let cur_motor_value = 255;
+    motor_hi.set_timestamp(cur_motor_value);
+    motor_lo.set_timestamp(0);
 
-    mcpwm.timer0.start(timer_clock_cfg);
 
-    let mut duty_cycle = 60;
-    let mut increasing = true;
-    let step = 5; 
-    let mut l_r = true;
-    loop {
         // Toggle LED
         led.toggle();
 
@@ -98,5 +90,26 @@ async fn main(_spawner: Spawner) {
         }
 
         Timer::after_millis(500).await;
+
+        // println!("Hello, World!");
+        // led.toggle();
+        // Timer::after_millis(1_000).await;
+
+        for cur_motor_value in (0..=255).rev() {
+            motor_hi.set_timestamp(cur_motor_value);
+            motor_lo.set_timestamp(0);
+            Timer::after_millis(10).await;
+        }
+
+        Timer::after_millis(100).await; 
+        
+        for cur_motor_value in (0..=255).rev() {
+            motor_hi.set_timestamp(0);
+            motor_lo.set_timestamp(cur_motor_value);
+            Timer::after_millis(10).await; 
+        }
+    
+        Timer::after_millis(100).await;
+
     }
 }
